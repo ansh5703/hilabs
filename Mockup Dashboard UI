@@ -1,0 +1,266 @@
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { Activity, Users, DollarSign, Clock, AlertTriangle, CheckCircle, Download, RefreshCw, Search, Filter } from 'lucide-react';
+
+// Sample data - In a real application, this would come from an API
+const networkData = {
+  providers: 2453,
+  gaps: 127,
+  avgWaitTime: "4.2 days",
+  costEfficiency: "87%",
+  regions: [
+    { name: "West", score: 92, providers: 650 },
+    { name: "Midwest", score: 88, providers: 580 },
+    { name: "Northeast", score: 95, providers: 720 },
+    { name: "South", score: 86, providers: 503 }
+  ],
+  trends: [
+    { month: "Jan", value: 85 },
+    { month: "Feb", value: 87 },
+    { month: "Mar", value: 89 },
+    { month: "Apr", value: 86 },
+    { month: "May", value: 88 },
+    { month: "Jun", value: 90 }
+  ]
+};
+
+const providersList = [
+  { id: 1, name: "Dr. Sarah Chen", specialty: "Cardiology", location: "NYC", score: 95, efficiency: 92, waitTime: "2 days" },
+  { id: 2, name: "Dr. Michael Ross", specialty: "Orthopedics", location: "LA", score: 88, efficiency: 85, waitTime: "3 days" },
+  { id: 3, name: "Dr. Emily Watson", specialty: "Pediatrics", location: "Chicago", score: 91, efficiency: 89, waitTime: "1 day" }
+];
+
+const recommendations = [
+  { id: 1, priority: "High", title: "Recruit Dermatologists in Southwest Region", impact: "Coverage +15%", savings: "$240K/year" },
+  { id: 2, priority: "Medium", title: "Optimize Primary Care Network in Midwest", impact: "Wait times -25%", savings: "$180K/year" },
+  { id: 3, priority: "High", title: "Address Mental Health Provider Shortage", impact: "Coverage +20%", savings: "$320K/year" }
+];
+
+const Dashboard = () => {
+  const [activeTab, setActiveTab] = useState("network");
+  
+  const MetricCard = ({ title, value, icon: Icon, trend }) => (
+    <Card className="bg-white">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-500">{title}</p>
+            <p className="text-2xl font-bold">{value}</p>
+          </div>
+          <Icon className="h-8 w-8 text-blue-500 opacity-75" />
+        </div>
+        {trend && (
+          <div className="mt-2">
+            <Badge variant={trend.type === 'increase' ? 'success' : 'destructive'}>
+              {trend.value}
+            </Badge>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  const NetworkOverview = () => (
+    <div className="space-y-4">
+      <div className="grid grid-cols-4 gap-4">
+        <MetricCard
+          title="Total Providers"
+          value={networkData.providers}
+          icon={Users}
+          trend={{ type: 'increase', value: '+5.2%' }}
+        />
+        <MetricCard
+          title="Network Gaps"
+          value={networkData.gaps}
+          icon={AlertTriangle}
+          trend={{ type: 'decrease', value: '-2.8%' }}
+        />
+        <MetricCard
+          title="Avg. Wait Time"
+          value={networkData.avgWaitTime}
+          icon={Clock}
+          trend={{ type: 'decrease', value: '-0.5 days' }}
+        />
+        <MetricCard
+          title="Cost Efficiency"
+          value={networkData.costEfficiency}
+          icon={DollarSign}
+          trend={{ type: 'increase', value: '+3.1%' }}
+        />
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Network Performance Trend</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={networkData.trends}>
+                  <XAxis dataKey="month" />
+                  <YAxis domain={[80, 100]} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="value" stroke="#2563eb" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Regional Performance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {networkData.regions.map(region => (
+                <div key={region.name} className="flex items-center justify-between">
+                  <span className="font-medium">{region.name}</span>
+                  <div className="flex items-center gap-4">
+                    <span>{region.providers} providers</span>
+                    <div className="w-32 bg-gray-200 h-2 rounded">
+                      <div 
+                        className="bg-blue-500 h-2 rounded"
+                        style={{ width: `${region.score}%` }}
+                      />
+                    </div>
+                    <span>{region.score}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+
+  const Providers = () => (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle>Provider Network</CardTitle>
+          <div className="flex gap-2">
+            <Filter className="h-5 w-5 text-gray-500" />
+            <Search className="h-5 w-5 text-gray-500" />
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left p-2">Provider</th>
+                <th className="text-left p-2">Specialty</th>
+                <th className="text-left p-2">Location</th>
+                <th className="text-left p-2">Quality Score</th>
+                <th className="text-left p-2">Efficiency</th>
+                <th className="text-left p-2">Wait Time</th>
+                <th className="text-left p-2">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {providersList.map(provider => (
+                <tr key={provider.id} className="border-b">
+                  <td className="p-2">{provider.name}</td>
+                  <td className="p-2">{provider.specialty}</td>
+                  <td className="p-2">{provider.location}</td>
+                  <td className="p-2">
+                    <Badge variant={provider.score >= 90 ? 'success' : 'default'}>
+                      {provider.score}%
+                    </Badge>
+                  </td>
+                  <td className="p-2">{provider.efficiency}%</td>
+                  <td className="p-2">{provider.waitTime}</td>
+                  <td className="p-2">
+                    {provider.score >= 90 ? (
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <Activity className="h-5 w-5 text-yellow-500" />
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const Recommendations = () => (
+    <div className="space-y-4">
+      {recommendations.map(rec => (
+        <Card key={rec.id}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant={rec.priority === 'High' ? 'destructive' : 'default'}>
+                    {rec.priority} Priority
+                  </Badge>
+                  <h3 className="font-medium">{rec.title}</h3>
+                </div>
+                <div className="flex gap-4 text-sm text-gray-500">
+                  <span>Expected Impact: {rec.impact}</span>
+                  <span>Potential Savings: {rec.savings}</span>
+                </div>
+              </div>
+              <button className="text-blue-500 hover:text-blue-600">
+                View Details →
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <img src="/api/placeholder/48/48" alt="OptiHealth Logo" className="h-12 w-12" />
+          <h1 className="text-2xl font-bold">OptiHealth Platform</h1>
+        </div>
+        <div className="flex items-center gap-4">
+          <button className="flex items-center gap-2 text-gray-500 hover:text-gray-600">
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </button>
+          <button className="flex items-center gap-2 text-gray-500 hover:text-gray-600">
+            <Download className="h-4 w-4" />
+            Export
+          </button>
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="network">Network Overview</TabsTrigger>
+          <TabsTrigger value="providers">Providers</TabsTrigger>
+          <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="network">
+          <NetworkOverview />
+        </TabsContent>
+        
+        <TabsContent value="providers">
+          <Providers />
+        </TabsContent>
+        
+        <TabsContent value="recommendations">
+          <Recommendations />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default Dashboard;
