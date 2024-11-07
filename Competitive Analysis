@@ -1,0 +1,299 @@
+import React, { useState } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
+const CompetitiveAnalysis = () => {
+  const [selectedCompetitor, setSelectedCompetitor] = useState('market');
+
+  const data = [
+    {
+      month: 'Jan',
+      our_quality: 90,
+      our_cost: 75,
+      our_accessibility: 92,
+      comp1_quality: 88,
+      comp1_cost: 70,
+      comp1_accessibility: 85,
+      comp2_quality: 85,
+      comp2_cost: 72,
+      comp2_accessibility: 83,
+      comp3_quality: 82,
+      comp3_cost: 68,
+      comp3_accessibility: 80
+    },
+    {
+      month: 'Feb',
+      our_quality: 91,
+      our_cost: 78,
+      our_accessibility: 93,
+      comp1_quality: 87,
+      comp1_cost: 72,
+      comp1_accessibility: 86,
+      comp2_quality: 86,
+      comp2_cost: 74,
+      comp2_accessibility: 84,
+      comp3_quality: 83,
+      comp3_cost: 70,
+      comp3_accessibility: 81
+    },
+    {
+      month: 'Mar',
+      our_quality: 93,
+      our_cost: 82,
+      our_accessibility: 94,
+      comp1_quality: 89,
+      comp1_cost: 75,
+      comp1_accessibility: 87,
+      comp2_quality: 87,
+      comp2_cost: 76,
+      comp2_accessibility: 85,
+      comp3_quality: 84,
+      comp3_cost: 72,
+      comp3_accessibility: 82
+    },
+    {
+      month: 'Apr',
+      our_quality: 94,
+      our_cost: 85,
+      our_accessibility: 95,
+      comp1_quality: 90,
+      comp1_cost: 77,
+      comp1_accessibility: 88,
+      comp2_quality: 88,
+      comp2_cost: 78,
+      comp2_accessibility: 86,
+      comp3_quality: 85,
+      comp3_cost: 74,
+      comp3_accessibility: 83
+    }
+  ];
+
+  const companies = {
+    our: '#2563EB',     // Blue
+    comp1: '#DC2626',   // Red
+    comp2: '#059669',   // Green
+    comp3: '#D97706'    // Amber
+  };
+
+  const getCompetitorName = (id) => {
+    switch(id) {
+      case 'comp1': return 'Competitor 1';
+      case 'comp2': return 'Competitor 2';
+      case 'comp3': return 'Competitor 3';
+      default: return 'Market Average';
+    }
+  };
+
+  const getPerformanceInsights = (competitor) => {
+    const latestMonth = data[data.length - 1];
+    const insights = [];
+    
+    const metrics = ['quality', 'cost', 'accessibility'];
+    metrics.forEach(metric => {
+      const ourScore = latestMonth[`our_${metric}`];
+      let comparisonScore;
+      
+      if (competitor === 'market') {
+        const competitorScores = [
+          latestMonth[`comp1_${metric}`],
+          latestMonth[`comp2_${metric}`],
+          latestMonth[`comp3_${metric}`]
+        ];
+        comparisonScore = competitorScores.reduce((a, b) => a + b) / 3;
+      } else {
+        comparisonScore = latestMonth[`${competitor}_${metric}`];
+      }
+      
+      const difference = (ourScore - comparisonScore).toFixed(1);
+      
+      insights.push({
+        metric: metric.charAt(0).toUpperCase() + metric.slice(1),
+        difference: difference,
+        positive: difference > 0,
+        ourScore: ourScore.toFixed(1),
+        theirScore: comparisonScore.toFixed(1)
+      });
+    });
+    
+    return insights;
+  };
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      const ourMetrics = payload.filter(p => p.name.startsWith('our_'));
+      const selectedMetrics = selectedCompetitor === 'market' 
+        ? payload.filter(p => !p.name.startsWith('our_'))
+        : payload.filter(p => p.name.startsWith(selectedCompetitor));
+      
+      return (
+        <div className="bg-white p-4 border rounded shadow-lg">
+          <p className="font-bold mb-2">{label}</p>
+          <div className="space-y-4">
+            <div>
+              <p className="font-semibold text-blue-600">Our Performance</p>
+              {ourMetrics.map((entry, index) => {
+                const metric = entry.name.split('_')[1];
+                return (
+                  <p key={index} className="text-sm">
+                    {metric.charAt(0).toUpperCase() + metric.slice(1)}: {entry.value}%
+                  </p>
+                );
+              })}
+            </div>
+            <div>
+              <p className="font-semibold" style={{ color: selectedCompetitor === 'market' ? '#6B7280' : companies[selectedCompetitor] }}>
+                {getCompetitorName(selectedCompetitor)}
+              </p>
+              {selectedCompetitor === 'market' 
+                ? selectedMetrics.reduce((acc, entry) => {
+                    const metric = entry.name.split('_')[1];
+                    const metricData = acc.find(m => m.metric === metric) || { metric, sum: 0, count: 0 };
+                    metricData.sum += entry.value;
+                    metricData.count += 1;
+                    if (!acc.find(m => m.metric === metric)) acc.push(metricData);
+                    return acc;
+                  }, []).map((metricData, index) => (
+                    <p key={index} className="text-sm">
+                      {metricData.metric.charAt(0).toUpperCase() + metricData.metric.slice(1)}: 
+                      {(metricData.sum / metricData.count).toFixed(1)}%
+                    </p>
+                  ))
+                : selectedMetrics.map((entry, index) => {
+                    const metric = entry.name.split('_')[1];
+                    return (
+                      <p key={index} className="text-sm">
+                        {metric.charAt(0).toUpperCase() + metric.slice(1)}: {entry.value}%
+                      </p>
+                    );
+                  })
+              }
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="text-xl mb-4">Competitive Performance Analysis</CardTitle>
+        <Tabs defaultValue="market" className="w-full" onValueChange={setSelectedCompetitor}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="market">Market Average</TabsTrigger>
+            <TabsTrigger value="comp1">Competitor 1</TabsTrigger>
+            <TabsTrigger value="comp2">Competitor 2</TabsTrigger>
+            <TabsTrigger value="comp3">Competitor 3</TabsTrigger>
+          </TabsList>
+          
+          {['market', 'comp1', 'comp2', 'comp3'].map(competitor => (
+            <TabsContent key={competitor} value={competitor} className="mt-0">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {getPerformanceInsights(competitor).map((insight, index) => (
+                  <Alert key={index}>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        {insight.positive ? 
+                          <TrendingUp className="text-green-500" /> : 
+                          <TrendingDown className="text-red-500" />
+                        }
+                        <AlertDescription className="font-medium">
+                          {insight.metric}
+                        </AlertDescription>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Us: {insight.ourScore}%</span>
+                        <span>Them: {insight.theirScore}%</span>
+                      </div>
+                      <AlertDescription className="text-sm font-medium">
+                        {insight.difference > 0 ? '+' : ''}{insight.difference}% difference
+                      </AlertDescription>
+                    </div>
+                  </Alert>
+                ))}
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
+      </CardHeader>
+      <CardContent>
+        <div className="h-96">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <XAxis 
+                dataKey="month" 
+                tick={{ fill: '#6B7280' }}
+              />
+              <YAxis 
+                domain={[0, 100]} 
+                label={{ 
+                  value: 'Performance Score (%)', 
+                  angle: -90, 
+                  position: 'insideLeft',
+                  style: { fill: '#6B7280' }
+                }}
+                tick={{ fill: '#6B7280' }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend 
+                payload={[
+                  { value: 'Quality', type: 'line', color: '#2563EB' },
+                  { value: 'Cost', type: 'line', color: '#2563EB' },
+                  { value: 'Accessibility', type: 'line', color: '#2563EB' }
+                ]}
+              />
+
+              {/* Our company's lines always visible */}
+              {['quality', 'cost', 'accessibility'].map((metric) => (
+                <Line
+                  key={`our_${metric}`}
+                  type="monotone"
+                  dataKey={`our_${metric}`}
+                  stroke={companies.our}
+                  strokeWidth={2.5}
+                  dot={true}
+                  activeDot={{ r: 6 }}
+                />
+              ))}
+
+              {/* Selected competitor's lines */}
+              {selectedCompetitor !== 'market' && ['quality', 'cost', 'accessibility'].map((metric) => (
+                <Line
+                  key={`${selectedCompetitor}_${metric}`}
+                  type="monotone"
+                  dataKey={`${selectedCompetitor}_${metric}`}
+                  stroke={companies[selectedCompetitor]}
+                  strokeWidth={2}
+                  dot={true}
+                  activeDot={{ r: 4 }}
+                />
+              ))}
+
+              {/* Show all competitors' lines when market view is selected */}
+              {selectedCompetitor === 'market' && Object.entries(companies).map(([company, color]) => (
+                company !== 'our' && ['quality', 'cost', 'accessibility'].map((metric) => (
+                  <Line
+                    key={`${company}_${metric}`}
+                    type="monotone"
+                    dataKey={`${company}_${metric}`}
+                    stroke={color}
+                    strokeWidth={1}
+                    dot={false}
+                    opacity={0.5}
+                  />
+                ))
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default CompetitiveAnalysis;
